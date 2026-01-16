@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Paper, Typography, TextField, Button, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Card, CardContent, Grid, Chip, TablePagination } from '@mui/material';
+import { Box, Paper, Typography, TextField, Button, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Card, CardContent, Grid, Chip, TablePagination, MenuItem } from '@mui/material';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { useData } from '../contexts/DataContext';
@@ -9,9 +9,11 @@ import { formatCurrencyForPDF, generateReportPDF } from '../utils/helpers';
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler);
 
 const SalesReports = () => {
-  const { invoices, profile } = useData();
+  const { invoices, profile, inventory } = useData();
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -26,10 +28,28 @@ const SalesReports = () => {
 
   const filteredInvoices = invoices.filter(inv => {
     const invDate = new Date(inv.date);
-    const from = dateFrom ? new Date(dateFrom) : new Date(0);
-    const to = dateTo ? new Date(dateTo) : new Date();
-    return invDate >= from && invDate <= to;
+    const from = dateFrom ? new Date(dateFrom) : null;
+    const to = dateTo ? new Date(dateTo) : null;
+
+    // Date Filter
+    if (from && invDate < from) return false;
+    if (to) {
+      const endOfDay = new Date(to);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (invDate > endOfDay) return false;
+    }
+
+    // Payment Filter
+    if (paymentFilter && inv.paymentMethod !== paymentFilter) return false;
+
+    // Category Filter (Show invoice if any item matches category)
+    if (categoryFilter && !inv.items.some(item => item.category === categoryFilter)) return false;
+
+    return true;
   });
+
+  const categories = ['All', ...new Set(inventory.map(item => item.category))];
+  const paymentMethods = ['All', 'Cash', 'UPI', 'Card', 'Other'];
 
   const totalRevenue = filteredInvoices.reduce((sum, inv) => sum + inv.total, 0);
   const totalInvoices = filteredInvoices.length;
@@ -84,15 +104,15 @@ const SalesReports = () => {
   };
 
   // Payment method distribution
-  const paymentMethods = filteredInvoices.reduce((acc, inv) => {
+  const paymentMethodsChartData = filteredInvoices.reduce((acc, inv) => {
     acc[inv.paymentMethod] = (acc[inv.paymentMethod] || 0) + 1;
     return acc;
   }, {});
 
   const paymentChartData = {
-    labels: Object.keys(paymentMethods),
+    labels: Object.keys(paymentMethodsChartData),
     datasets: [{
-      data: Object.values(paymentMethods),
+      data: Object.values(paymentMethodsChartData),
       backgroundColor: [
         '#2e7d32',
         '#880e4f',
@@ -111,9 +131,8 @@ const SalesReports = () => {
       `Average Invoice Value: ${formatCurrencyForPDF(avgInvoiceValue)}`
     ];
 
-    if (dateFrom || dateTo) {
-      summaryLines.unshift(`Period: ${dateFrom || 'Start'} to ${dateTo || 'Today'}`);
-    }
+    if (paymentFilter) summaryLines.push(`Payment Method: ${paymentFilter}`);
+    if (categoryFilter) summaryLines.push(`Category: ${categoryFilter}`);
 
     const tableData = filteredInvoices.map(inv => [
       inv.id,
@@ -211,12 +230,58 @@ const SalesReports = () => {
       </Grid>
 
       <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>Filter by Date Range</Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-          <TextField label="From Date" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
-          <TextField label="To Date" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
-          <Button variant="outlined" onClick={() => { setDateFrom(''); setDateTo(''); }}>Clear</Button>
-        </Box>
+        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>Filter Sales</Typography>
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="From Date"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              label="To Date"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              select
+              label="Payment Method"
+              fullWidth
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+            >
+              <MenuItem value="">All Payment Methods</MenuItem>
+              <MenuItem value="Cash">Cash</MenuItem>
+              <MenuItem value="UPI">UPI</MenuItem>
+              <MenuItem value="Card">Card</MenuItem>
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              select
+              label="Product Category"
+              fullWidth
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <MenuItem value="">All Categories</MenuItem>
+              {categories.slice(1).map((cat) => (
+                <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+        </Grid>
+        <Button variant="outlined" onClick={() => { setDateFrom(''); setDateTo(''); setPaymentFilter(''); setCategoryFilter(''); }}>Clear Filters</Button>
       </Paper>
 
       <Paper sx={{ p: 3, mb: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
