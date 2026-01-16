@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableHead, TableRow, IconButton, TextField, MenuItem, Paper, Typography, TableContainer, Chip, Card, CardContent, Grid, Divider, Tooltip } from '@mui/material';
-import { Add, Delete, Print, Visibility, WhatsApp, Download, Search, FilterList, Receipt, Share } from '@mui/icons-material';
+import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Table, TableBody, TableCell, TableHead, TableRow, IconButton, TextField, MenuItem, Paper, Typography, TableContainer, Chip, Card, CardContent, Grid, Divider, Tooltip, useMediaQuery, useTheme, AppBar, Toolbar } from '@mui/material';
+import { Add, Delete, Print, Visibility, WhatsApp, Download, Search, FilterList, Receipt, Share, Close } from '@mui/icons-material';
 import { useData } from '../contexts/DataContext';
 import { generateInvoiceNumber } from '../utils/helpers';
 import InvoicePrint from '../components/InvoicePrint';
@@ -21,6 +21,8 @@ const Invoices = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const printRef = useRef();
 
   const totalInvoices = invoices.length;
@@ -449,34 +451,34 @@ const Invoices = () => {
                     ₹{inv.total.toLocaleString('en-IN')}
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 0.5 }, flexWrap: 'wrap' }}>
                       <IconButton
                         size="small"
                         onClick={() => setViewInvoice(inv)}
-                        sx={{ color: 'primary.main', bgcolor: 'rgba(136, 14, 79, 0.05)', '&:hover': { bgcolor: 'rgba(136, 14, 79, 0.1)' } }}
+                        sx={{ color: 'primary.main', bgcolor: 'rgba(136, 14, 79, 0.05)', '&:hover': { bgcolor: 'rgba(136, 14, 79, 0.1)' }, p: { xs: 1, sm: 0.5 } }}
                       >
-                        <Visibility fontSize="small" />
+                        <Visibility fontSize={isMobile ? "medium" : "small"} />
                       </IconButton>
                       <IconButton
                         size="small"
                         onClick={() => downloadPDF(inv)}
-                        sx={{ color: '#0284c7', bgcolor: 'rgba(2, 132, 199, 0.05)', '&:hover': { bgcolor: 'rgba(2, 132, 199, 0.1)' } }}
+                        sx={{ color: '#0284c7', bgcolor: 'rgba(2, 132, 199, 0.05)', '&:hover': { bgcolor: 'rgba(2, 132, 199, 0.1)' }, p: { xs: 1, sm: 0.5 } }}
                       >
-                        <Download fontSize="small" />
+                        <Download fontSize={isMobile ? "medium" : "small"} />
                       </IconButton>
                       <IconButton
                         size="small"
                         onClick={() => sendWhatsApp(inv)}
-                        sx={{ color: '#16a34a', bgcolor: 'rgba(22, 163, 74, 0.05)', '&:hover': { bgcolor: 'rgba(22, 163, 74, 0.1)' } }}
+                        sx={{ color: '#16a34a', bgcolor: 'rgba(22, 163, 74, 0.05)', '&:hover': { bgcolor: 'rgba(22, 163, 74, 0.1)' }, p: { xs: 1, sm: 0.5 } }}
                       >
-                        <WhatsApp fontSize="small" />
+                        <WhatsApp fontSize={isMobile ? "medium" : "small"} />
                       </IconButton>
                       <IconButton
                         size="small"
                         onClick={() => deleteInvoice(inv.id)}
-                        sx={{ color: 'error.main', bgcolor: 'rgba(220, 38, 38, 0.05)', '&:hover': { bgcolor: 'rgba(220, 38, 38, 0.1)' } }}
+                        sx={{ color: 'error.main', bgcolor: 'rgba(220, 38, 38, 0.05)', '&:hover': { bgcolor: 'rgba(220, 38, 38, 0.1)' }, p: { xs: 1, sm: 0.5 } }}
                       >
-                        <Delete fontSize="small" />
+                        <Delete fontSize={isMobile ? "medium" : "small"} />
                       </IconButton>
                     </Box>
                   </TableCell>
@@ -575,17 +577,45 @@ const Invoices = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={!!viewInvoice} onClose={() => setViewInvoice(null)} maxWidth="md" fullWidth>
-        <DialogContent>
+      <Dialog
+        open={!!viewInvoice}
+        onClose={() => setViewInvoice(null)}
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : 4 } }}
+      >
+        {isMobile && (
+          <AppBar sx={{ position: 'relative', bgcolor: 'primary.main' }}>
+            <Toolbar>
+              <IconButton edge="start" color="inherit" onClick={() => setViewInvoice(null)} aria-label="close">
+                <Close />
+              </IconButton>
+              <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+                View Invoice
+              </Typography>
+              <Button autoFocus color="inherit" onClick={() => handlePrint(viewInvoice)}>
+                Print
+              </Button>
+            </Toolbar>
+          </AppBar>
+        )}
+        <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
           {viewInvoice && <InvoicePrint ref={printRef} invoice={viewInvoice} />}
         </DialogContent>
-        <DialogActions sx={{ p: 2, bgcolor: 'grey.50' }}>
-          <Button onClick={() => setViewInvoice(null)}>Close</Button>
-          <Box sx={{ flexGrow: 1 }} />
-          <Button onClick={() => downloadPDF(viewInvoice)} startIcon={<Download />} variant="outlined">Download</Button>
-          <Button onClick={() => sharePDF(viewInvoice)} startIcon={<Share />} variant="outlined" color="primary">Share PDF</Button>
-          <Button onClick={() => sendWhatsApp(viewInvoice)} startIcon={<WhatsApp />} variant="contained" sx={{ bgcolor: '#25D366', '&:hover': { bgcolor: '#1da851' } }}>Text Message</Button>
-          <Button onClick={() => handlePrint(viewInvoice)} variant="contained" startIcon={<Print />}>Print</Button>
+        <DialogActions sx={{
+          p: 2,
+          bgcolor: 'grey.50',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 1.5,
+          '& > :not(style) + :not(style)': { ml: { xs: 0, sm: 1 } }
+        }}>
+          <Button onClick={() => setViewInvoice(null)} fullWidth={isMobile} variant="outlined">Close</Button>
+          {!isMobile && <Box sx={{ flexGrow: 1 }} />}
+          <Button onClick={() => downloadPDF(viewInvoice)} startIcon={<Download />} variant="outlined" fullWidth={isMobile}>Download</Button>
+          <Button onClick={() => sharePDF(viewInvoice)} startIcon={<Share />} variant="outlined" color="primary" fullWidth={isMobile}>Share PDF</Button>
+          <Button onClick={() => sendWhatsApp(viewInvoice)} startIcon={<WhatsApp />} variant="contained" sx={{ bgcolor: '#25D366', '&:hover': { bgcolor: '#1da851' } }} fullWidth={isMobile}>Text Message</Button>
+          {!isMobile && <Button onClick={() => handlePrint(viewInvoice)} variant="contained" startIcon={<Print />}>Print</Button>}
         </DialogActions>
       </Dialog>
     </Box>
