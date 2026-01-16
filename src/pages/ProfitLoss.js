@@ -5,11 +5,13 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, 
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { useData } from '../contexts/DataContext';
 import { exportToCSV } from '../utils/helpers';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
 
 const ProfitLoss = () => {
-  const { inventory, invoices } = useData();
+  const { inventory, invoices, profile } = useData();
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -120,6 +122,55 @@ const ProfitLoss = () => {
     exportToCSV(data, 'profit-loss-report');
   };
 
+  const exportPDF = () => {
+    try {
+      console.log('Starting Profit & Loss PDF Export...');
+      const doc = new jsPDF();
+
+      doc.setFontSize(20);
+      doc.setTextColor(136, 14, 79);
+      doc.text(`${profile.businessName} - Profit & Loss Report`, 105, 15, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+      doc.text(`Report Generated: ${new Date().toLocaleString()}`, 20, 25);
+      if (dateFrom || dateTo) {
+        doc.text(`Period: ${dateFrom || 'Start'} to ${dateTo || 'Today'}`, 20, 31);
+      }
+
+      doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`, 20, 42);
+      doc.text(`Total Cost: ₹${totalCost.toFixed(2)}`, 20, 48);
+      doc.text(`Total Profit/Loss: ₹${totalProfit.toFixed(2)}`, 20, 54);
+      doc.text(`Net Margin: ${profitMargin}%`, 20, 60);
+
+      const tableData = profitData.map(item => [
+        item.invoiceId,
+        new Date(item.date).toLocaleDateString(),
+        `${item.itemName} (${item.category})`,
+        item.quantity,
+        `₹${item.cost.toFixed(2)}`,
+        `₹${item.revenue.toFixed(2)}`,
+        `₹${item.profit.toFixed(2)}`
+      ]);
+
+      console.log('Generating Table...');
+      autoTable(doc, {
+        startY: 70,
+        head: [['Invoice', 'Date', 'Item', 'Qty', 'Cost', 'Revenue', 'Profit']],
+        body: tableData,
+        headStyles: { fillColor: [136, 14, 79] },
+        styles: { fontSize: 8 }
+      });
+
+      console.log('Saving PDF...');
+      doc.save('profit-loss-report.pdf');
+      console.log('PDF Saved successfully');
+    } catch (error) {
+      console.error('Profit & Loss PDF Export Error:', error);
+      alert('Failed to generate PDF. Please check the console for details.');
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>Profit & Loss Report</Typography>
@@ -191,7 +242,10 @@ const ProfitLoss = () => {
       <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Category-wise Profit</Typography>
-          <Button startIcon={<Download />} onClick={exportReport} variant="contained">Export CSV</Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button startIcon={<Download />} onClick={exportPDF} variant="contained" sx={{ bgcolor: 'primary.main' }}>Export PDF</Button>
+            <Button startIcon={<Download />} onClick={exportReport} variant="outlined">Export CSV</Button>
+          </Box>
         </Box>
         <Bar data={chartData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
       </Paper>

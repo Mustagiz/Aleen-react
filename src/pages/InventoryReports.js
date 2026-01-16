@@ -40,31 +40,49 @@ const InventoryReports = () => {
   const totalProfit = filteredInventory.reduce((sum, item) => sum + ((item.price - (item.cost || 0)) * item.quantity), 0);
 
   const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text(`${profile.businessName} - Inventory Report`, 105, 15, { align: 'center' });
-    doc.setFontSize(10);
-    if (startDate || endDate) {
-      doc.text(`Period: ${startDate || 'All Time'} to ${endDate || 'Present'}`, 20, 30);
+    try {
+      console.log('Starting Inventory PDF Export...');
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.setTextColor(136, 14, 79);
+      doc.text(`${profile.businessName} - Inventory Report`, 105, 15, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+      doc.text(`Report Generated: ${new Date().toLocaleString()}`, 20, 25);
+      if (startDate || endDate) {
+        doc.text(`Period: ${startDate || 'All Time'} to ${endDate || 'Present'}`, 20, 31);
+      }
+
+      doc.text(`Total Items: ${filteredInventory.length}`, 20, 38);
+      doc.text(`Total Value: ₹${totalValue.toFixed(2)}`, 20, 44);
+      doc.text(`Low Stock Items: ${lowStockCount}`, 20, 50);
+
+      const tableData = filteredInventory.map(item => [
+        item.name,
+        item.category,
+        item.size,
+        item.color,
+        `₹${item.price}`,
+        item.quantity,
+        item.dateAdded ? new Date(item.dateAdded).toLocaleDateString() : 'N/A'
+      ]);
+
+      console.log('Generating Table...');
+      autoTable(doc, {
+        startY: 60,
+        head: [['Name', 'Category', 'Size', 'Color', 'Price', 'Stock', 'Added Date']],
+        body: tableData,
+        headStyles: { fillColor: [136, 14, 79] }
+      });
+
+      console.log('Saving PDF...');
+      doc.save('inventory-report.pdf');
+      console.log('PDF Saved successfully');
+    } catch (error) {
+      console.error('Inventory PDF Export Error:', error);
+      alert('Failed to generate PDF. Please check the console for details.');
     }
-    doc.text(`Total Items: ${filteredInventory.length}`, 20, 35);
-    doc.text(`Total Value: ₹${totalValue.toFixed(2)}`, 20, 42);
-    doc.text(`Low Stock Items: ${lowStockCount}`, 20, 49);
-    const tableData = filteredInventory.map(item => [
-      item.name,
-      item.category,
-      item.size,
-      item.color,
-      `₹${item.price}`,
-      item.quantity,
-      item.dateAdded ? new Date(item.dateAdded).toLocaleDateString() : 'N/A'
-    ]);
-    autoTable(doc, {
-      startY: 60,
-      head: [['Name', 'Category', 'Size', 'Color', 'Price', 'Stock', 'Added Date']],
-      body: tableData
-    });
-    doc.save('inventory-report.pdf');
   };
 
   const exportCSV = () => {
