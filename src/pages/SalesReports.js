@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Paper, Typography, TextField, Button, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Card, CardContent, Grid, Chip } from '@mui/material';
+import { Box, Paper, Typography, TextField, Button, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Card, CardContent, Grid, Chip, TablePagination } from '@mui/material';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { useData } from '../contexts/DataContext';
@@ -12,6 +12,17 @@ const SalesReports = () => {
   const { invoices, profile } = useData();
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const filteredInvoices = invoices.filter(inv => {
     const invDate = new Date(inv.date);
@@ -240,19 +251,29 @@ const SalesReports = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredInvoices.map((inv, idx) => (
-                <TableRow key={inv.id} sx={{ '&:hover': { bgcolor: 'rgba(136, 14, 79, 0.02)' } }}>
-                  <TableCell sx={{ fontWeight: 700 }}>#{inv.id}</TableCell>
-                  <TableCell sx={{ fontSize: '0.875rem' }}>{new Date(inv.date).toLocaleDateString()}</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{inv.items?.length || 0} Products</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: 'primary.main' }}>₹{inv.total.toLocaleString('en-IN')}</TableCell>
-                </TableRow>
-              ))}
+              {filteredInvoices
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((inv, idx) => (
+                  <TableRow key={inv.id} sx={{ '&:hover': { bgcolor: 'rgba(136, 14, 79, 0.02)' } }}>
+                    <TableCell sx={{ fontWeight: 700 }}>#{inv.id}</TableCell>
+                    <TableCell sx={{ fontSize: '0.875rem' }}>{new Date(inv.date).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{inv.items?.length || 0} Products</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: 'primary.main' }}>₹{inv.total.toLocaleString('en-IN')}</TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={filteredInvoices.length}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </Paper>
-    </Box>
+    </Box >
   );
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Paper, Typography, TextField, Button, Table, TableBody, TableCell, TableHead, TableRow, MenuItem, TableContainer, Card, CardContent, Grid, Chip, useMediaQuery, useTheme, Divider } from '@mui/material';
+import { Box, Paper, Typography, TextField, Button, Table, TableBody, TableCell, TableHead, TableRow, MenuItem, TableContainer, Card, CardContent, Grid, Chip, useMediaQuery, useTheme, Divider, TablePagination } from '@mui/material';
 import { useData } from '../contexts/DataContext';
 import { Download, Inventory2, Warning, TrendingUp, AttachMoney } from '@mui/icons-material';
 import { formatCurrencyForPDF, generateReportPDF } from '../utils/helpers';
@@ -12,6 +12,17 @@ const InventoryReports = () => {
   const [stockLevel, setStockLevel] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const allCategories = [...new Set(inventory.map(item => item.category))];
 
@@ -272,38 +283,49 @@ const InventoryReports = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredInventory.map((item) => {
-                  const itemDate = item.dateAdded ? new Date(item.dateAdded) : (isNaN(item.id) ? new Date() : new Date(parseInt(item.id)));
-                  return (
-                    <TableRow key={item.id} sx={{ '&:hover': { bgcolor: 'rgba(136, 14, 79, 0.02)' } }}>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.name}</Typography>
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
-                          <Chip label={item.category} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(136, 14, 79, 0.05)', color: 'primary.main' }} />
-                          <Typography variant="caption" color="text.secondary">{item.size} • {item.color}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                          {itemDate.toLocaleDateString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 700 }}>₹{item.price}</Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.quantity < 10 ? '#ef4444' : item.quantity < 50 ? '#f59e0b' : '#10b981' }} />
-                          <Typography variant="caption" sx={{ fontWeight: 600 }}>{item.quantity} Units</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>₹{(item.price * item.quantity).toLocaleString('en-IN')}</Typography>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {filteredInventory
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((item) => {
+                    const itemDate = item.dateAdded ? new Date(item.dateAdded) : (isNaN(item.id) ? new Date() : new Date(parseInt(item.id)));
+                    return (
+                      <TableRow key={item.id} sx={{ '&:hover': { bgcolor: 'rgba(136, 14, 79, 0.02)' } }}>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.name}</Typography>
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
+                            <Chip label={item.category} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(136, 14, 79, 0.05)', color: 'primary.main' }} />
+                            <Typography variant="caption" color="text.secondary">{item.size} • {item.color}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                            {itemDate.toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 700 }}>₹{item.price}</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.quantity < 10 ? '#ef4444' : item.quantity < 50 ? '#f59e0b' : '#10b981' }} />
+                            <Typography variant="caption" sx={{ fontWeight: 600 }}>{item.quantity} Units</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 800, color: 'primary.main' }}>₹{(item.price * item.quantity).toLocaleString('en-IN')}</Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={filteredInventory.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
         </Paper>
       )}
     </Box>

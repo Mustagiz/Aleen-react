@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Paper, Typography, TextField, MenuItem, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Grid, Card, CardContent, Button } from '@mui/material';
+import { Box, Paper, Typography, TextField, MenuItem, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Grid, Card, CardContent, Button, TablePagination } from '@mui/material';
 import { TrendingUp, TrendingDown, Download } from '@mui/icons-material';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
@@ -14,6 +14,17 @@ const ProfitLoss = () => {
   const [dateTo, setDateTo] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [itemFilter, setItemFilter] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const categories = ['All', ...new Set(inventory.map(item => item.category))];
 
@@ -260,33 +271,44 @@ const ProfitLoss = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {profitData.map((item, idx) => (
-                <TableRow key={idx} sx={{ '&:hover': { bgcolor: 'rgba(136, 14, 79, 0.01)' } }}>
-                  <TableCell sx={{ fontWeight: 700 }}>#{item.invoiceId}</TableCell>
-                  <TableCell sx={{ fontSize: '0.8rem' }}>{new Date(item.date).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.itemName}</Typography>
-                    <Typography variant="caption" color="text.secondary">{item.category} • Qty: {item.quantity}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 700 }}>₹{item.revenue.toLocaleString('en-IN')}</Typography>
-                    <Typography variant="caption" color="text.secondary">Cost: ₹{item.cost.toLocaleString('en-IN')}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: item.profit >= 0 ? '#1b5e20' : '#c62828' }}>
-                      ₹{item.profit.toLocaleString('en-IN')}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: item.profit >= 0 ? '#1b5e20' : '#c62828', opacity: 0.8 }}>
-                      {item.margin}% margin
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {profitData
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((item, idx) => (
+                  <TableRow key={idx} sx={{ '&:hover': { bgcolor: 'rgba(136, 14, 79, 0.01)' } }}>
+                    <TableCell sx={{ fontWeight: 700 }}>#{item.invoiceId}</TableCell>
+                    <TableCell sx={{ fontSize: '0.8rem' }}>{new Date(item.date).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.itemName}</Typography>
+                      <Typography variant="caption" color="text.secondary">{item.category} • Qty: {item.quantity}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>₹{item.revenue.toLocaleString('en-IN')}</Typography>
+                      <Typography variant="caption" color="text.secondary">Cost: ₹{item.cost.toLocaleString('en-IN')}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: item.profit >= 0 ? '#1b5e20' : '#c62828' }}>
+                        ₹{item.profit.toLocaleString('en-IN')}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: item.profit >= 0 ? '#1b5e20' : '#c62828', opacity: 0.8 }}>
+                        {item.margin}% margin
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={profitData.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </Paper>
-    </Box>
+    </Box >
   );
 };
 
