@@ -105,28 +105,41 @@ const Layout = () => {
               <Store sx={{ color: 'white', fontSize: 28 }} />
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>
+              <Typography variant="h6" sx={{
+                fontWeight: 700,
+                color: '#1a1a1a',
+                lineHeight: 1.2,
+                fontSize: { xs: '1rem', md: '1.25rem' },
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: { xs: 160, sm: 'auto' }
+              }}>
                 {profile.businessName}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
-                Inventory & Sales Management
-              </Typography>
+              {!isMobile && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                  Inventory & Sales Management
+                </Typography>
+              )}
             </Box>
           </Box>
-          <Chip
-            label="Administrator"
-            size="small"
-            sx={{
-              mr: 2,
-              bgcolor: 'rgba(245, 127, 23, 0.1)',
-              color: 'secondary.dark',
-              fontWeight: 700,
-              fontSize: '0.65rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              borderRadius: 1
-            }}
-          />
+          {!isMobile && (
+            <Chip
+              label="Administrator"
+              size="small"
+              sx={{
+                mr: 2,
+                bgcolor: 'rgba(245, 127, 23, 0.1)',
+                color: 'secondary.dark',
+                fontWeight: 700,
+                fontSize: '0.65rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                borderRadius: 1
+              }}
+            />
+          )}
           <Avatar
             sx={{
               bgcolor: 'primary.main',
