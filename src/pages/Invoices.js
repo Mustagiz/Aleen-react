@@ -286,7 +286,7 @@ const Invoices = () => {
     <Box>
       {/* Header with Stats */}
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 2, mb: 3 }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>Invoices</Typography>
             <Typography variant="body2" color="text.secondary">Create, manage and track all your invoices</Typography>
@@ -300,7 +300,8 @@ const Invoices = () => {
             }}
             size="large"
             sx={{
-              px: 4,
+              width: { xs: '100%', sm: 'auto' },
+              px: { xs: 2, sm: 4 },
               py: 1.25,
               background: 'linear-gradient(135deg, #880e4f 0%, #ad1457 100%)',
               boxShadow: '0 4px 12px rgba(136, 14, 79, 0.2)',
