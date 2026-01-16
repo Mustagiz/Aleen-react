@@ -5,7 +5,7 @@ import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const Settings = () => {
-  const { profile, updateProfile } = useData();
+  const { profile, updateProfile, inventory, invoices } = useData();
   const { changePassword } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [localProfile, setLocalProfile] = useState(profile);
@@ -57,6 +57,10 @@ const Settings = () => {
       setPwdState({ ...pwdState, error: err.message, success: '' });
     }
   };
+
+  const totalYears = new Date().getFullYear() - (parseInt(profile.established) || 2020);
+  const totalProducts = inventory.length;
+  const uniqueCustomers = new Set(invoices.map(inv => inv.customer || 'Walk-in')).size;
 
   return (
     <Box>
@@ -295,19 +299,19 @@ const Settings = () => {
               <Grid container spacing={2}>
                 <Grid item xs={6} sm={3}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#fef3c7', borderRadius: 2 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#92400e' }}>4+</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#92400e' }}>{totalYears}+</Typography>
                     <Typography variant="caption" color="text.secondary">Years</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={6} sm={3}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#dbeafe', borderRadius: 2 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e40af' }}>500+</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e40af' }}>{totalProducts}+</Typography>
                     <Typography variant="caption" color="text.secondary">Products</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={6} sm={3}>
                   <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#dcfce7', borderRadius: 2 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#166534' }}>1K+</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#166534' }}>{uniqueCustomers}+</Typography>
                     <Typography variant="caption" color="text.secondary">Customers</Typography>
                   </Paper>
                 </Grid>
