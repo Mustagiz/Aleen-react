@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, Download } from '@mui/icons-material';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { useData } from '../contexts/DataContext';
-import { exportToCSV } from '../utils/helpers';
+import { exportToCSV, formatCurrencyForPDF } from '../utils/helpers';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -138,9 +138,9 @@ const ProfitLoss = () => {
         doc.text(`Period: ${dateFrom || 'Start'} to ${dateTo || 'Today'}`, 20, 31);
       }
 
-      doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`, 20, 42);
-      doc.text(`Total Cost: ₹${totalCost.toFixed(2)}`, 20, 48);
-      doc.text(`Total Profit/Loss: ₹${totalProfit.toFixed(2)}`, 20, 54);
+      doc.text(`Total Revenue: ${formatCurrencyForPDF(totalRevenue)}`, 20, 42);
+      doc.text(`Total Cost: ${formatCurrencyForPDF(totalCost)}`, 20, 48);
+      doc.text(`Total Profit/Loss: ${formatCurrencyForPDF(totalProfit)}`, 20, 54);
       doc.text(`Net Margin: ${profitMargin}%`, 20, 60);
 
       const tableData = profitData.map(item => [
@@ -148,9 +148,9 @@ const ProfitLoss = () => {
         new Date(item.date).toLocaleDateString(),
         `${item.itemName} (${item.category})`,
         item.quantity,
-        `₹${item.cost.toFixed(2)}`,
-        `₹${item.revenue.toFixed(2)}`,
-        `₹${item.profit.toFixed(2)}`
+        formatCurrencyForPDF(item.cost),
+        formatCurrencyForPDF(item.revenue),
+        formatCurrencyForPDF(item.profit)
       ]);
 
       console.log('Generating Table...');

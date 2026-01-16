@@ -4,6 +4,7 @@ import { useData } from '../contexts/DataContext';
 import { Download, Inventory2, Warning, TrendingUp, AttachMoney } from '@mui/icons-material';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatCurrencyForPDF } from '../utils/helpers';
 
 const InventoryReports = () => {
   const theme = useTheme();
@@ -55,7 +56,7 @@ const InventoryReports = () => {
       }
 
       doc.text(`Total Items: ${filteredInventory.length}`, 20, 38);
-      doc.text(`Total Value: ₹${totalValue.toFixed(2)}`, 20, 44);
+      doc.text(`Total Value: ${formatCurrencyForPDF(totalValue)}`, 20, 44);
       doc.text(`Low Stock Items: ${lowStockCount}`, 20, 50);
 
       const tableData = filteredInventory.map(item => [
@@ -63,7 +64,7 @@ const InventoryReports = () => {
         item.category,
         item.size,
         item.color,
-        `₹${item.price}`,
+        formatCurrencyForPDF(item.price),
         item.quantity,
         item.dateAdded ? new Date(item.dateAdded).toLocaleDateString() : 'N/A'
       ]);

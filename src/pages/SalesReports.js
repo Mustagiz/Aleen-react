@@ -6,6 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { Download, TrendingUp, Receipt, AttachMoney } from '@mui/icons-material';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatCurrencyForPDF } from '../utils/helpers';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, Filler);
 
@@ -113,16 +114,16 @@ const SalesReports = () => {
 
       // Summary
       doc.setFontSize(12);
-      doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`, 20, 42);
+      doc.text(`Total Revenue: ${formatCurrencyForPDF(totalRevenue)}`, 20, 42);
       doc.text(`Total Invoices: ${totalInvoices}`, 20, 48);
-      doc.text(`Average Invoice Value: ₹${avgInvoiceValue.toFixed(2)}`, 20, 54);
+      doc.text(`Average Invoice Value: ${formatCurrencyForPDF(avgInvoiceValue)}`, 20, 54);
 
       const tableData = filteredInvoices.map(inv => [
         inv.id,
         new Date(inv.date).toLocaleDateString(),
         inv.customer || 'Walk-in',
         inv.paymentMethod,
-        `₹${inv.total.toFixed(2)}`
+        formatCurrencyForPDF(inv.total)
       ]);
 
       console.log('Generating Table...');

@@ -15,7 +15,7 @@ export const calculateInvoiceTotals = (items, discountPercent = 0) => {
   const afterDiscount = subtotal - discount;
   const tax = calculateGST(afterDiscount);
   const total = afterDiscount + tax;
-  
+
   return { subtotal, discount, tax, total };
 };
 
@@ -31,10 +31,10 @@ export const generateInvoiceNumber = (lastNumber = 0) => {
 // Export to CSV
 export const exportToCSV = (data, filename) => {
   if (!data || data.length === 0) return alert('No data to export');
-  
+
   const headers = Object.keys(data[0]);
   let csvContent = headers.join(',') + '\n';
-  
+
   data.forEach(row => {
     const values = headers.map(header => {
       const value = row[header];
@@ -42,19 +42,25 @@ export const exportToCSV = (data, filename) => {
     });
     csvContent += values.join(',') + '\n';
   });
-  
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+  // Add BOM for Excel compatibility
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `${filename}_${new Date().getTime()}.csv`;
   link.click();
 };
 
-// Format currency
+// Format currency for Display
 export const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     minimumFractionDigits: 2
   }).format(amount);
+};
+
+// Format currency for PDF (Avoids Rupee symbol issues)
+export const formatCurrencyForPDF = (amount) => {
+  return `Rs. ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 };
