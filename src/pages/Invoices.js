@@ -60,6 +60,12 @@ const Invoices = () => {
   };
 
   const handleSaveInvoice = async () => {
+    const validItems = selectedItems.filter(item => item.id);
+    if (validItems.length === 0) {
+      alert('Please add at least one item');
+      return;
+    }
+
     const { subtotal, taxAmount, total, absDiscount } = calculateTotal();
     const invoiceNumber = generateInvoiceNumber(invoices.length);
     const invoice = {
@@ -68,9 +74,14 @@ const Invoices = () => {
       customer,
       phone,
       paymentMethod,
-      items: selectedItems.map(item => {
+      items: validItems.map(item => {
         const invItem = inventory.find(i => i.id === item.id);
-        return { ...item, name: invItem.name, price: invItem.price, category: invItem.category };
+        return {
+          ...item,
+          name: invItem?.name || 'Unknown Item',
+          price: invItem?.price || 0,
+          category: invItem?.category || 'General'
+        };
       }),
       subtotal,
       tax: taxAmount,
@@ -81,7 +92,7 @@ const Invoices = () => {
     };
     await addInvoice(invoice);
     setOpen(false);
-    setSelectedItems([]);
+    setSelectedItems([{ id: '', quantity: 1 }]);
     setDiscount(0);
     setCustomer('');
     setPhone('+91');
@@ -258,7 +269,10 @@ const Invoices = () => {
           <Button
             variant="contained"
             startIcon={<Add />}
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              setSelectedItems([{ id: '', quantity: 1 }]);
+              setOpen(true);
+            }}
             size="large"
             sx={{
               px: 4,
@@ -496,8 +510,25 @@ const Invoices = () => {
             <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 2 }}>Invoice Items</Typography>
             {selectedItems.map((item, index) => (
               <Box key={index} sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2, p: 2, bgcolor: 'white', borderRadius: 2 }}>
-                <TextField select label="Item" value={item.id} onChange={(e) => handleItemChange(index, 'id', e.target.value)} fullWidth>
-                  {inventory.map(inv => <MenuItem key={inv.id} value={inv.id}>{inv.name} - ₹{inv.price}</MenuItem>)}
+                <TextField
+                  select
+                  label="Select Item"
+                  value={item.id}
+                  onChange={(e) => handleItemChange(index, 'id', e.target.value)}
+                  fullWidth
+                  error={!item.id && selectedItems.length > 0}
+                >
+                  {inventory.length > 0 ? (
+                    inventory.map(inv => (
+                      <MenuItem key={inv.id} value={inv.id}>
+                        {inv.name} - ₹{inv.price} ({inv.quantity} in stock)
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled value="">
+                      No items in inventory
+                    </MenuItem>
+                  )}
                 </TextField>
                 <TextField label="Quantity" type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))} sx={{ width: { xs: '100%', sm: 150 } }} />
                 <IconButton onClick={() => setSelectedItems(selectedItems.filter((_, i) => i !== index))} sx={{ color: 'error.main' }}><Delete /></IconButton>

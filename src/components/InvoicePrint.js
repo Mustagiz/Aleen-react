@@ -95,7 +95,7 @@ const InvoicePrint = forwardRef(({ invoice }, ref) => {
 
       {/* Footer */}
       <Box sx={{ borderTop: 2, borderColor: 'grey.300', pt: 2, textAlign: 'center' }}>
-        <Typography variant="body2" sx={{ mb: 1 }}>Thank you for shopping with ${profile.businessName}!</Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>Thank you for shopping with {profile.businessName}!</Typography>
         <Typography variant="caption" color="text.secondary">
           Terms: Goods once sold cannot be returned or exchanged.
         </Typography>
