@@ -4,12 +4,11 @@ import { Edit, Delete, Add, Search, Inventory2, TrendingUp, Warning } from '@mui
 import { useData } from '../contexts/DataContext';
 
 const Inventory = () => {
-  const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } = useData();
+  const { inventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, categories, updateCategories } = useData();
   const [open, setOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [categories, setCategories] = useState(['Sarees', 'Kurtis', 'Lehenga', 'Salwar Suits', 'Dupattas', 'Blouses']);
   const [newCategory, setNewCategory] = useState('');
   const [form, setForm] = useState({
     name: '', category: '', size: '', color: '', price: '', cost: '', quantity: '', supplier: ''
@@ -20,16 +19,12 @@ const Inventory = () => {
   const lowStockItems = inventory.filter(item => item.quantity < 10).length;
   const totalProfit = inventory.reduce((sum, item) => sum + ((item.price - (item.cost || 0)) * item.quantity), 0);
 
-  useEffect(() => {
-    const savedCategories = localStorage.getItem('categories');
-    if (savedCategories) setCategories(JSON.parse(savedCategories));
-  }, []);
 
-  const handleAddCategory = () => {
+
+  const handleAddCategory = async () => {
     if (newCategory && !categories.includes(newCategory)) {
       const updated = [...categories, newCategory];
-      setCategories(updated);
-      localStorage.setItem('categories', JSON.stringify(updated));
+      await updateCategories(updated);
       setForm({ ...form, category: newCategory });
       setNewCategory('');
     }

@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 
 const DataContext = createContext();
 
@@ -7,6 +9,7 @@ export const useData = () => useContext(DataContext);
 export const DataProvider = ({ children }) => {
   const [inventory, setInventory] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [categories, setCategories] = useState(['Sarees', 'Kurtis', 'Lehenga', 'Salwar Suits', 'Dupattas', 'Blouses']);
   const [profile, setProfile] = useState({
     businessName: 'Aleen Clothing',
     ownerName: 'Admin',
@@ -19,73 +22,125 @@ export const DataProvider = ({ children }) => {
     specialization: 'Women\'s Fashion & Accessories'
   });
 
+  // Real-time synchronization
   useEffect(() => {
-    const savedInventory = localStorage.getItem('inventory');
-    const savedInvoices = localStorage.getItem('invoices');
-    const savedProfile = localStorage.getItem('profile');
-    if (savedInventory) setInventory(JSON.parse(savedInventory));
-    if (savedInvoices) setInvoices(JSON.parse(savedInvoices));
-    if (savedProfile) setProfile(JSON.parse(savedProfile));
+    const unsubInventory = onSnapshot(collection(db, 'inventory'), (snapshot) => {
+      setInventory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    const unsubInvoices = onSnapshot(collection(db, 'invoices'), (snapshot) => {
+      setInvoices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    const unsubProfile = onSnapshot(doc(db, 'settings', 'profile'), (snapshot) => {
+      if (snapshot.exists()) {
+        setProfile(snapshot.data());
+      }
+    });
+
+    const unsubCategories = onSnapshot(doc(db, 'settings', 'inventory'), (snapshot) => {
+      if (snapshot.exists() && snapshot.data().categories) {
+        setCategories(snapshot.data().categories);
+      }
+    });
+
+    return () => {
+      unsubInventory();
+      unsubInvoices();
+      unsubProfile();
+      unsubCategories();
+    };
+  }, []);
+
+  // One-time migration from LocalStorage to Cloud
+  useEffect(() => {
+    const migrateData = async () => {
+      const hasMigrated = localStorage.getItem('firebase_migrated');
+      if (hasMigrated) return;
+
+      const localInv = JSON.parse(localStorage.getItem('inventory') || '[]');
+      const localInvoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+      const localProfile = JSON.parse(localStorage.getItem('profile'));
+      const localCategories = JSON.parse(localStorage.getItem('categories'));
+
+      if (localInv.length > 0) {
+        for (const item of localInv) {
+          await setDoc(doc(db, 'inventory', item.id), item);
+        }
+      }
+      if (localInvoices.length > 0) {
+        for (const inv of localInvoices) {
+          await setDoc(doc(db, 'invoices', inv.id), inv);
+        }
+      }
+      if (localProfile) {
+        await setDoc(doc(db, 'settings', 'profile'), localProfile);
+      }
+      if (localCategories) {
+        await setDoc(doc(db, 'settings', 'inventory'), { categories: localCategories });
+      }
+
+      localStorage.setItem('firebase_migrated', 'true');
+    };
+
+    migrateData();
   }, []);
 
   const addInventoryItem = async (item) => {
-    const newItem = { ...item, id: Date.now().toString(), dateAdded: new Date().toISOString() };
-    const updated = [...inventory, newItem];
-    setInventory(updated);
-    localStorage.setItem('inventory', JSON.stringify(updated));
+    const id = Date.now().toString();
+    const newItem = { ...item, id, dateAdded: new Date().toISOString() };
+    await setDoc(doc(db, 'inventory', id), newItem);
   };
 
   const updateInventoryItem = async (id, updates) => {
-    const updated = inventory.map(item => item.id === id ? { ...item, ...updates } : item);
-    setInventory(updated);
-    localStorage.setItem('inventory', JSON.stringify(updated));
+    await updateDoc(doc(db, 'inventory', id), updates);
   };
 
   const deleteInventoryItem = async (id) => {
-    const updated = inventory.filter(item => item.id !== id);
-    setInventory(updated);
-    localStorage.setItem('inventory', JSON.stringify(updated));
+    await deleteDoc(doc(db, 'inventory', id));
   };
 
   const addInvoice = async (invoice) => {
-    const newInvoice = { ...invoice, id: Date.now().toString() };
-    const updatedInvoices = [...invoices, newInvoice];
-    setInvoices(updatedInvoices);
-    localStorage.setItem('invoices', JSON.stringify(updatedInvoices));
+    const id = Date.now().toString();
+    const newInvoice = { ...invoice, id };
 
-    const updatedInventory = [...inventory];
+    // Use a batch to ensure inventory update and invoice creation are atomic
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'invoices', id), newInvoice);
+
     for (const item of invoice.items) {
-      const invItem = updatedInventory.find(i => i.id === item.id);
+      const invRef = doc(db, 'inventory', item.id);
+      const invItem = inventory.find(i => i.id === item.id);
       if (invItem) {
-        invItem.quantity = invItem.quantity - item.quantity;
+        batch.update(invRef, {
+          quantity: invItem.quantity - item.quantity
+        });
       }
     }
-    setInventory(updatedInventory);
-    localStorage.setItem('inventory', JSON.stringify(updatedInventory));
+    await batch.commit();
   };
 
   const updateInvoice = async (id, updates) => {
-    const updated = invoices.map(inv => inv.id === id ? { ...inv, ...updates } : inv);
-    setInvoices(updated);
-    localStorage.setItem('invoices', JSON.stringify(updated));
+    await updateDoc(doc(db, 'invoices', id), updates);
   };
 
   const deleteInvoice = async (id) => {
-    const updated = invoices.filter(inv => inv.id !== id);
-    setInvoices(updated);
-    localStorage.setItem('invoices', JSON.stringify(updated));
+    await deleteDoc(doc(db, 'invoices', id));
   };
 
   const updateProfile = async (updates) => {
-    const updated = { ...profile, ...updates };
-    setProfile(updated);
-    localStorage.setItem('profile', JSON.stringify(updated));
+    await setDoc(doc(db, 'settings', 'profile'), { ...profile, ...updates });
+  };
+
+  const updateCategories = async (newCategories) => {
+    await setDoc(doc(db, 'settings', 'inventory'), { categories: newCategories });
   };
 
   return (
     <DataContext.Provider value={{
       inventory,
       invoices,
+      categories,
       addInventoryItem,
       updateInventoryItem,
       deleteInventoryItem,
@@ -93,7 +148,8 @@ export const DataProvider = ({ children }) => {
       updateInvoice,
       deleteInvoice,
       profile,
-      updateProfile
+      updateProfile,
+      updateCategories
     }}>
       {children}
     </DataContext.Provider>

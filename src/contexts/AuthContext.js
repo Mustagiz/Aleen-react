@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -9,11 +11,26 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [loading, setLoading] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('admin123');
+  const [loading, setLoading] = useState(true);
+
+  // Sync admin password from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'auth'), (snapshot) => {
+      if (snapshot.exists()) {
+        setAdminPassword(snapshot.data().password);
+      } else {
+        // Initialize if not exists
+        setDoc(doc(db, 'settings', 'auth'), { password: 'admin123' });
+      }
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
 
   const login = (email, password) => {
-    const currentPassword = localStorage.getItem('adminPassword') || 'admin123';
-    if (email === 'admin@aleen.com' && password === currentPassword) {
+    if (email === 'admin@aleen.com' && password === adminPassword) {
       const userData = { email };
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -23,12 +40,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const changePassword = (currentPassword, newPassword) => {
-    const savedPassword = localStorage.getItem('adminPassword') || 'admin123';
-    if (currentPassword !== savedPassword) {
+    if (currentPassword !== adminPassword) {
       return Promise.reject(new Error('Current password is incorrect'));
     }
-    localStorage.setItem('adminPassword', newPassword);
-    return Promise.resolve();
+    return setDoc(doc(db, 'settings', 'auth'), { password: newPassword });
   };
 
   const logout = () => {
