@@ -78,20 +78,22 @@ const Layout = () => {
         }}
       >
         <Toolbar sx={{ py: 1.5, px: { sx: 2, md: 4 } }}>
-          <IconButton
-            edge="start"
-            onClick={() => setOpen(!open)}
-            sx={{
-              mr: 2,
-              bgcolor: 'primary.main',
-              color: 'white',
-              '&:hover': { bgcolor: 'primary.dark' },
-              width: 40,
-              height: 40
-            }}
-          >
-            <Menu />
-          </IconButton>
+          {!isMobile && (
+            <IconButton
+              edge="start"
+              onClick={() => setOpen(!open)}
+              sx={{
+                mr: 2,
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': { bgcolor: 'primary.dark' },
+                width: 40,
+                height: 40
+              }}
+            >
+              <Menu />
+            </IconButton>
+          )}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexGrow: 1 }}>
             <Box sx={{
               bgcolor: 'primary.main',
